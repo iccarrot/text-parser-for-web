@@ -16,7 +16,7 @@ public:
 
     QString         getText() const;
     void            init(const QString&, const QString&);
-    void            setReadOnly(bool value);
+    void            setReadOnly(const bool value);
 
 private:
     QLabel*         m_label;

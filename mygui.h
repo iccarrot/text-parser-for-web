@@ -23,7 +23,9 @@ public:
 
 private:
     bool                    m_isWorking;
+
     MyUrlTableModel         m_model;
+    QSortFilterProxyModel*  m_proxyModel;
 
     QPushButton*            m_button;
     QProgressBar*           m_progress;
@@ -40,11 +42,14 @@ private:
     QThreadPool*            m_tPool;
 
     void                    doWork(const MyUrl& url);
-    void                    working(const bool value);
+    void                    showMessageBox(const QString& message);
+    void                    startWork();
+    void                    stopWork();
+    void                    update(const bool isWorking);
 
 public slots:
-    void                    slotNewUrl(MyUrl& url);
     void                    slotFinished();
+    void                    slotNewUrl(MyUrl& url);
     void                    slotUpdateProgress(const int value);
 
 private slots:

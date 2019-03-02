@@ -1,19 +1,17 @@
 #include "mygui.h"
 
-MyGUI::MyGUI(QWidget* parent) : QWidget (parent), m_isWorking(false), m_model()
+MyGUI::MyGUI(QWidget* parent) : QWidget(parent), m_isWorking(false), m_model()
 {
+    m_proxyModel        = new QSortFilterProxyModel();
     m_button            = new QPushButton();
     m_progress          = new QProgressBar();
     m_table             = new QTableView();
-
     m_hbLayout          = new QHBoxLayout();
     m_vbLayout          = new QVBoxLayout();
-
     m_searchText        = new MyLabelWithLineEdit();
     m_scanningUrlCount  = new MyLabelWithLineEdit();
     m_startUrl          = new MyLabelWithLineEdit();
     m_threadCount       = new MyLabelWithLineEdit();
-
     m_tPool             = new QThreadPool();
 }
 
@@ -27,21 +25,23 @@ void MyGUI::makeConnections()
 
 void MyGUI::init(const QString& product,const QString& version)
 {
-    {
-        QString title = product + ". Version: " + version;
-        setWindowTitle(title);
-    }
+    setWindowTitle(product + ". Version: " + version);
 
-    m_searchText->init("Search text:", "developer");
-    m_scanningUrlCount->init("Maximum number of scanning urls:", "1");
-    m_startUrl->init("Start url:", "https://developex.com.ua");
-    m_threadCount->init("Maximum number of threads:", "1");
+    m_proxyModel->setDynamicSortFilter(false);
+    m_proxyModel->setSourceModel(&m_model);
+
+    m_searchText->init("Search text:", "example");
+    m_scanningUrlCount->init("Maximum number of scanning urls:", "10");
+    m_startUrl->init("Start url:", "http://example.com/");
+    m_threadCount->init("Maximum number of threads:", "2");
     m_button->setText("Start");
 
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    m_table->setModel(&m_model);
-    m_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    m_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    m_table->setModel(m_proxyModel);
+    m_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    m_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    m_table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    m_table->setSortingEnabled(true);
 
     m_hbLayout->addWidget(m_threadCount);
     m_hbLayout->addWidget(m_scanningUrlCount);
@@ -65,14 +65,59 @@ void MyGUI::doWork(const MyUrl& url)
     m_tPool->start(worker);
 }
 
-void MyGUI::working(const bool value)
+void MyGUI::showMessageBox(const QString& message)
 {
-    m_isWorking = value;
-    m_searchText->setReadOnly(value);
-    m_scanningUrlCount->setReadOnly(value);
-    m_startUrl->setReadOnly(value);
-    m_threadCount->setReadOnly(value);
-    m_button->setText(value ? "Stop" : "Start");
+    QMessageBox msgBox;
+    msgBox.setText(message);
+    msgBox.exec();
+}
+
+void MyGUI::startWork()
+{
+    if (m_startUrl->getText().isEmpty() or m_searchText->getText().isEmpty())
+    {
+        showMessageBox("Start url or searching text are empty");
+    }
+    else if (not MyUrl::regEx.match(m_startUrl->getText()).hasMatch())
+    {
+        showMessageBox("Wrong url");
+    }
+    else if (0 >= m_scanningUrlCount->getText().toInt() or 0 >= m_threadCount->getText().toInt())
+    {
+        showMessageBox("Maximum number of scanning urls and maximum number of threads must be more or equal then one");
+    }
+    else
+    {
+        update(true);
+        m_progress->reset();
+        m_progress->setMaximum(0);
+        m_model.reset();
+        m_model.setMaxRowsCount(m_scanningUrlCount->getText().toInt());
+        m_model.newUrl(m_startUrl->getText());
+        m_tPool->setMaxThreadCount(m_threadCount->getText().toInt());
+    }
+}
+
+void MyGUI::stopWork()
+{
+    m_tPool->clear();
+    slotFinished();
+}
+
+void MyGUI::update(const bool isWorking)
+{
+    m_isWorking = isWorking;
+    m_searchText->setReadOnly(isWorking);
+    m_scanningUrlCount->setReadOnly(isWorking);
+    m_startUrl->setReadOnly(isWorking);
+    m_threadCount->setReadOnly(isWorking);
+    m_button->setText(isWorking ? "Stop" : "Start");
+}
+
+void MyGUI::slotFinished()
+{
+    showMessageBox("Finished");
+    update(false);
 }
 
 void MyGUI::slotNewUrl(MyUrl& url)
@@ -81,14 +126,6 @@ void MyGUI::slotNewUrl(MyUrl& url)
     url.setStatus(MyUrl::Status::DOWNLOAD);
     m_model.updateUrl(url);
     doWork(url);
-}
-
-void MyGUI::slotFinished()
-{
-    working(false);
-    QMessageBox msgBox;
-    msgBox.setText("Finished");
-    msgBox.exec();
 }
 
 void MyGUI::slotUpdateProgress(const int value)
@@ -100,35 +137,10 @@ void MyGUI::slotButtonClicked()
 {
     if (m_isWorking)
     {
-        slotFinished();
-        m_tPool->clear();
-    }
-    else if (m_startUrl->getText().isEmpty() or m_searchText->getText().isEmpty())
-    {
-        QMessageBox msgBox;
-        msgBox.setText("Start url or searching text are empty");
-        msgBox.exec();
-    }
-    else if (not MyUrl::regEx.match(m_startUrl->getText()).hasMatch())
-    {
-        QMessageBox msgBox;
-        msgBox.setText("Wrong url");
-        msgBox.exec();
-    }
-    else if (0 >= m_scanningUrlCount->getText().toInt() or 0 >= m_threadCount->getText().toInt())
-    {
-        QMessageBox msgBox;
-        msgBox.setText("Maximum number of scanning urls and maximum number of threads must be more then one");
-        msgBox.exec();
+        stopWork();
     }
     else
     {
-        working(true);
-        m_progress->reset();
-        m_progress->setMaximum(0);
-        m_model.reset();
-        m_model.setMaxRowsCount(m_scanningUrlCount->getText().toInt());
-        m_model.newUrl(m_startUrl->getText());
-        m_tPool->setMaxThreadCount(m_threadCount->getText().toInt());
+        startWork();
     }
 }

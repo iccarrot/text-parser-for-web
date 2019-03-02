@@ -2,7 +2,7 @@
 
 static int count = 0;
 
-MyUrlTableModel::MyUrlTableModel(QObject* parent) : QAbstractTableModel(parent), m_nColumns(2), m_urls()
+MyUrlTableModel::MyUrlTableModel(QObject* parent) : QAbstractTableModel(parent), m_nColumns(3), m_urls()
 {
 
 }
@@ -15,25 +15,18 @@ QVariant MyUrlTableModel::data(const QModelIndex& index, int role) const
 
         if (0 == index.column())
         {
-            return url.getAddress();
+            return index.row() + 1;
         }
 
         if (1 == index.column())
         {
-            if (MyUrl::Status::MY_ERROR != url.getStatus())
-            {
-                if ((MyUrl::Status::NOT_FOUND == url.getStatus()))
-                {
-                    return QString("not found");
-                }
+            return url.getAddress();
+        }
 
-                return QVariant::fromValue(url.getStatus()).toString().toLower();
-            }
-            else
-            {
-                return url.getErrorMessage();
-
-            }
+        if (2 == index.column())
+        {
+            return MyUrl::Status::MY_ERROR == url.getStatus() ? url.getErrorMessage() :
+                                                                QVariant::fromValue(url.getStatus()).toString().toLower().replace("_", " ");
         }
     }
 
@@ -42,23 +35,21 @@ QVariant MyUrlTableModel::data(const QModelIndex& index, int role) const
 
 QVariant MyUrlTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (Qt::DisplayRole == role)
+    if (Qt::DisplayRole == role and Qt::Orientation::Horizontal == orientation)
     {
-        if(Qt::Orientation::Horizontal == orientation)
+        if (0 == section)
         {
-            if (0 == section)
-            {
-                return "Url";
-            }
-
-            if (1 == section)
-            {
-                return "Status";
-            }
+            return "Id";
         }
-        else
+
+        if (1 == section)
         {
-            return section + 1;
+            return "Url";
+        }
+
+        if (2 == section)
+        {
+            return "Status";
         }
     }
 
@@ -142,9 +133,9 @@ void MyUrlTableModel::slotResult(const QPair<MyUrl, QStringList>& result)
         newUrl(url);
     }
 
-    if (not std::any_of(m_urls.rbegin(), m_urls.rend(), [] (const MyUrl url)
+    if (not std::any_of(m_urls.rbegin(), m_urls.rend(), [] (const MyUrl& url)
         {
-            return MyUrl::Status::NEW == url.getStatus() or MyUrl::Status::DOWNLOAD == url.getStatus();
+                        return MyUrl::Status::NEW == url.getStatus() or MyUrl::Status::DOWNLOAD == url.getStatus();
         }))
     {
         emit finished();

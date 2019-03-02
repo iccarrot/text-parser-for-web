@@ -26,8 +26,8 @@ public:
     QUrl    getAddress      () const;
     QString getErrorMessage () const;
     Status  getStatus       () const;
-    void    setErrorMessage (const QString&);
-    void    setStatus       (Status);
+    void    setErrorMessage (const QString& message);
+    void    setStatus       (const Status status);
 
     friend void swap(MyUrl&, MyUrl&);
 

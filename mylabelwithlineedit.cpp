@@ -23,7 +23,7 @@ void MyLabelWithLineEdit::init(const QString& labelText, const QString& exampleT
     setLayout(m_layout);
 }
 
-void MyLabelWithLineEdit::setReadOnly(bool value)
+void MyLabelWithLineEdit::setReadOnly(const bool value)
 {
     m_lineEdit->setReadOnly(value);
 }
