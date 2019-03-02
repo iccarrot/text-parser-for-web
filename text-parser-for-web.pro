@@ -28,7 +28,7 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-VERSION = 1.0.0.0
+VERSION = 1.0.0.1
 QMAKE_TARGET_PRODUCT = "Text parser for web"
 
 DEFINES += APP_VERSION=\"\\\"$${VERSION}\\\"\" \

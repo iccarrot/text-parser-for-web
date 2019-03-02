@@ -23,23 +23,24 @@ public:
 
 private:
     bool                    m_isWorking;
-
     MyUrlTableModel         m_model;
-    QSortFilterProxyModel*  m_proxyModel;
+    QThreadPool             m_threadPool;
 
     QPushButton*            m_button;
     QProgressBar*           m_progress;
+    QSortFilterProxyModel*  m_proxyModel;
     QTableView*             m_table;
-
-    QHBoxLayout*            m_hbLayout;
     QVBoxLayout*            m_vbLayout;
 
+    QGroupBox*              m_searchBox;
+    QVBoxLayout*            m_searchLayout;
     MyLabelWithLineEdit*    m_searchText;
-    MyLabelWithLineEdit*    m_scanningUrlCount;
-    MyLabelWithLineEdit*    m_startUrl;
-    MyLabelWithLineEdit*    m_threadCount;
+    MyLabelWithLineEdit*    m_searchUrl;
 
-    QThreadPool*            m_tPool;
+    QGroupBox*              m_optionsBox;
+    QHBoxLayout*            m_optionsLayout;
+    MyLabelWithLineEdit*    m_optionsUrlCount;
+    MyLabelWithLineEdit*    m_optionsThreadCount;
 
     void                    doWork(const MyUrl& url);
     void                    showMessageBox(const QString& message);
